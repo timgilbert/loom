@@ -37,7 +37,7 @@
   if any. Weights become edge labels unless a label is specified.
   Labels also include attributes when the graph satisfies AttrGraph."
   [g & {:keys [graph-name node-label edge-label]
-        :or {graph-name "graph"} :as opts }]
+        :or {graph-name "graph"} :as opts}]
   (let [d? (directed? g)
         w? (weighted? g)
         a? (attr? g)
@@ -117,7 +117,7 @@
     ;; Maybe it's ok for Linux?
     (condp = (os)
       :mac (sh "open" (str f))
-      :win (sh "cmd" (str "/c start " (-> f .toURI .toURL str)))
+      :win (sh "cmd.exe" (str "/c start " (-> f .toURI .toURL str)))
       :unix (sh "xdg-open" (str f)))
     nil))
 
@@ -138,15 +138,24 @@
     (.deleteOnExit tmp)
     (open tmp)))
 
+(defn- executable
+  "Given an algorithm keyword as passed to (view), return an OS-appropriate
+  string that can be used to execute the corresponding executable."
+  [alg]
+  (let [base (name alg)]
+    (if (= (os) :win)
+      (str base ".exe")
+      base)))
+
 (defn render-to-bytes
   "Renders the graph g in the image format using GraphViz and returns data
   as a byte array.
   Requires GraphViz's 'dot' (or a specified algorithm) to be installed in
   the shell's path. Possible algorithms include :dot, :neato, :fdp, :sfdp,
   :twopi, and :circo. Possible formats include :png, :ps, :pdf, and :svg."
-  [g & {:keys [alg fmt] :or {alg "dot" fmt :png} :as opts}]
+  [g & {:keys [alg fmt] :or {alg :dot fmt :png} :as opts}]
   (let [dot (apply dot-str g (apply concat opts))
-        {:keys [out]} (sh (name alg) (str "-T" (name fmt)) :in dot :out-enc :bytes)]
+        {:keys [out]} (sh (executable alg) (str "-T" (name fmt)) :in dot :out-enc :bytes)]
     out))
 
 (defn view
@@ -156,4 +165,4 @@
   the shell's path. Possible algorithms include :dot, :neato, :fdp, :sfdp,
   :twopi, and :circo. Possible formats include :png, :ps, :pdf, and :svg."
   [g & {:keys [fmt] :or {fmt :png} :as opts}]
-    (open-data (apply render-to-bytes g (apply concat opts)) fmt))
+  (open-data (apply render-to-bytes g (apply concat opts)) fmt))
